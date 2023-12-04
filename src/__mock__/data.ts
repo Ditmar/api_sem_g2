@@ -1,4 +1,6 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 const data = [
     "test1"
-]
-export default data;
+];
+exports.default = data;
