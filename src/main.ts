@@ -1,8 +1,11 @@
 import server from './server'
 import UserRouter from './presentation/routers/user-router';
-import { MongoClient } from 'mongodb';
+import { MongoClient, ObjectId } from 'mongodb';
 import NoSQLWrapper from './data/interfaces/data-sources/no-sql-wrapper';
 import { Response } from 'express';
+import YearRouter from './presentation/routers/year-router';
+import VolumeRouter from './presentation/routers/volume-router';
+import { isArgumentsObject } from 'util/types';
 
 if (process.env.NODE_ENV !== 'production') {
     require('dotenv').config();
@@ -30,9 +33,69 @@ const getMongoDBClient = async (): Promise<NoSQLWrapper> => {
         const result = await db.collection('users').find({}).toArray();
         return result;
     }
+
+
+    const CreateYear= async (year: any): Promise<any> => {
+        const result = await db.collection('years').insertOne(year);
+        console.log(`New year created with the following id: ${result.insertedId}`);
+        return {
+            acknowledged: result.acknowledged,
+            insertedId: result.insertedId,
+        };
+    }
+
+    const FindAllYears = async (): Promise<any[]> => {
+        const result = await db.collection('years').find({}).toArray();
+        return result;
+    }
+
+    const CreateVolume= async (volume: any): Promise<any> => {
+        const result = await db.collection('volumes').insertOne(volume);
+        console.log(`New year created with the following id: ${result.insertedId}`);
+        return {
+            acknowledged: result.acknowledged,
+            insertedId: result.insertedId,
+        };
+    }
+
+    const FindYearbyName = async(name:string): Promise<any> => {
+        const result = await db.collection('years').findOne({ name });
+
+        return result;
+    }
+const FindAllVolumes = async(page:number, limit:number): Promise<any[]> => {
+  const skip = (page - 1) * limit;
+  const result = await db.collection('volumes').find({}).skip(skip).limit(limit).toArray();
+  return result;
+};
+
+
+    const FindAllVolumeByYear = async (year:string,page:number,limit:number): Promise<any> => {
+        let resultYear: any = { name: '' };
+
+        try {
+            resultYear = await FindYearbyName(year);
+            console.log(resultYear);
+        } catch(error: any) {
+            return error;
+        }
+        
+        const objectYearID = new ObjectId(resultYear._id);
+        console.log(objectYearID);  
+        const skip = (page - 1) * limit;
+        const result = await db.collection('volumes').find({ year: objectYearID.toString() }).skip(skip).limit(limit).toArray();
+        return result;
+    }
+
     return {
         CreateUser,
-        FindAllUsers
+        FindAllUsers,
+        CreateYear,
+        FindAllYears,
+        CreateVolume,
+        FindAllVolumes,
+        
+        FindAllVolumeByYear
     }
 }
 
@@ -47,8 +110,12 @@ const getMongoDBClient = async (): Promise<NoSQLWrapper> => {
 (async() => {
     const db = await getMongoDBClient();
     server.use('/api', UserRouter(db));
+    server.use('/api', YearRouter(db));
+    server.use('/api', VolumeRouter(db));
     const port = process.env.API_PORT || 3000;
     server.listen(port, () => {
         console.log(`Server is listening on port ${port}`);
     });
 })();
+
+
