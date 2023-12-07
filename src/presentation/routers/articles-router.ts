@@ -6,15 +6,17 @@ import fs from 'fs';
 import HttpStateCodes from '../../utils/http-state-codes';
 import NoSQLWrapper from '../../data/interfaces/data-sources/no-sql-wrapper';
 import { ValidateFields } from '../../interceptors/Validate-fields';
-import { AccessControlMiddleware, ValidateAuthentication } from '../../interceptors/Access-auth-validate';
+import { AccessControlMiddleware } from '../../interceptors/Access-auth-validate';
+import { ValidateAuthentication } from '../../tools/utils';
+import { articleMessages, serverMessages } from '../../busines/messages';
 
 export const ArticlesRouter = (db: NoSQLWrapper) => {
     // routing
     const router = express.Router();
 
       const storage = multer.diskStorage({
-        destination: (req, file, cb) => {
-          const uploadPath = 'uploads';
+        destination: (request, file, cb) => {
+          const uploadPath = process.env.API_UPLOAD_DIR || 'uploads';
       
           fs.access(uploadPath, (error) => {
             if (error) {
@@ -31,7 +33,7 @@ export const ArticlesRouter = (db: NoSQLWrapper) => {
             }
           });
         },
-        filename: (req, file, cb) => {
+        filename: (request, file, cb) => {
           const fileName = `${file.fieldname}-${Date.now()}${path.extname(file.originalname)}`;
           cb(null, fileName);
         },
@@ -39,14 +41,14 @@ export const ArticlesRouter = (db: NoSQLWrapper) => {
 
   const upload = multer({ storage, limits: { fileSize: 20 * 1024 * 1024 } });
 
-  router.post('/articles/publish', ValidateAuthentication, AccessControlMiddleware(['administrador', 'revisor']), upload.single('file'), ValidateFields, async (req: Request, res: Response) => {
-    if (!req.file || req.file.mimetype !== 'application/pdf' || req.file.size > 20 * 1024 * 1024) {
-      return res.status(HttpStateCodes.BAD_REQUEST).json({ error: 'Seleccione un archivo válido', status: HttpStateCodes.BAD_REQUEST });
+  router.post('/articles/publish', ValidateAuthentication, AccessControlMiddleware(['administrador', 'revisor']), upload.single('file'), ValidateFields, async (request: Request, response: Response) => {
+    if (!request.file || request.file.mimetype !== 'application/pdf' || request.file.size > 20 * 1024 * 1024) {
+      return response.status(HttpStateCodes.BAD_REQUEST).json({ error:articleMessages.pdfRequired});
     }
   
-    const createArticle = req.body;
+    const createArticle = request.body;
     const publicationDate = new Date();
-    const filePath = req.file.path;
+    const filePath = request.file.path;
   
     const file = filePath;
   
@@ -55,14 +57,14 @@ export const ArticlesRouter = (db: NoSQLWrapper) => {
     try {
       const resultDb = await db.CreateArticle(articleData);
   
-      return res.status(HttpStateCodes.OK).json({ response: resultDb });
+      return response.status(HttpStateCodes.OK).json({ response: resultDb });
     } catch (error) {
       console.error('Error al insertar el artículo en la base de datos:', error);
-      return res.status(HttpStateCodes.INTERNAL_SERVER_ERROR).json({ error: 'Error interno del servidor', status: HttpStateCodes.INTERNAL_SERVER_ERROR });
+      return response.status(HttpStateCodes.INTERNAL_SERVER_ERROR).json({ error: serverMessages.serverError});
     }
   });
 
-  router.get('/articles/publish', ValidateAuthentication, AccessControlMiddleware(['administrador', 'revisor']), async (req, res) => {
+  router.get('/articles/publish', ValidateAuthentication, AccessControlMiddleware(['administrador', 'revisor']), async (request, response) => {
     try {
       const resultDbList = await db.FindAllArticle();
 
@@ -76,23 +78,23 @@ export const ArticlesRouter = (db: NoSQLWrapper) => {
         };
       });
 
-      return res.status(HttpStateCodes.OK).json({ response: responseList });
+      return response.status(HttpStateCodes.OK).json({ response: responseList });
     } catch (error) {
       console.error('Error al buscar los artículos en la base de datos:', error);
-      return res.status(HttpStateCodes.INTERNAL_SERVER_ERROR).json({ error: 'Error interno del servidor', status: HttpStateCodes.INTERNAL_SERVER_ERROR });
+      return response.status(HttpStateCodes.INTERNAL_SERVER_ERROR).json({ error:serverMessages.serverError});
     }
   });
  
-  router.get('/articles/publish/:id', ValidateAuthentication, AccessControlMiddleware(['administrador', 'revisor']), async (req, res) => {
+  router.get('/articles/publish/:id', ValidateAuthentication, AccessControlMiddleware(['administrador', 'revisor']), async (request, response) => {
     try {
-      const id = req.params.id;
+      const id = request.params.id;
       const resultDb = await db.FindArticleById(id);
   
       if (!resultDb) {
-        return res.status(HttpStateCodes.NOT_FOUND).json({ error: 'Artículo no encontrado', status: HttpStateCodes.NOT_FOUND });
+        return response.status(HttpStateCodes.NOT_FOUND).json({ error:articleMessages.articleFind});
       }
   
-      const response = {
+      const res = {
         _id:resultDb._id,
         title:resultDb.title,
         author:resultDb.author,
@@ -100,30 +102,30 @@ export const ArticlesRouter = (db: NoSQLWrapper) => {
         file: resultDb.file 
       };
   
-      return res.status(HttpStateCodes.OK).json({ response });
+      return response.status(HttpStateCodes.OK).json({ response });
     } catch (error) {
       console.error('Error al buscar el artículo en la base de datos:', error);
-      return res.status(HttpStateCodes.INTERNAL_SERVER_ERROR).json({ error: 'Error interno del servidor', status: HttpStateCodes.INTERNAL_SERVER_ERROR });
+      return response.status(HttpStateCodes.INTERNAL_SERVER_ERROR).json({ error:serverMessages.serverError });
     }
   });
 
   
-  router.put('/articles/publish/:id', ValidateAuthentication, AccessControlMiddleware(['administrador', 'revisor']), upload.single('file'), ValidateFields, async (req, res) => {
-    const id = req.params.id;
+  router.put('/articles/publish/:id', ValidateAuthentication, AccessControlMiddleware(['administrador', 'revisor']), upload.single('file'), ValidateFields, async (request, response) => {
+    const id = request.params.id;
     const findArticle = await db.FindArticleById(id);
   
     if (!findArticle) {
-      return res.status(HttpStateCodes.BAD_REQUEST).json({ error: 'No se encontró el artículo solicitado', status: HttpStateCodes.BAD_REQUEST });
+      return response.status(HttpStateCodes.BAD_REQUEST).json({ error: articleMessages.articleFind });
     }
   
-    let updatedData = req.body;
+    let updatedData = request.body;
   
-    if (req.file) {
-      if (req.file.mimetype !== 'application/pdf' || req.file.size > 20 * 1024 * 1024) {
-        return res.status(HttpStateCodes.BAD_REQUEST).json({ error: 'Seleccione un archivo PDF válido', status: HttpStateCodes.BAD_REQUEST });
+    if (request.file) {
+      if (request.file.mimetype !== 'application/pdf' || request.file.size > 20 * 1024 * 1024) {
+        return response.status(HttpStateCodes.BAD_REQUEST).json({ error:articleMessages.pdfRequired});
       }
   
-      const filePath = req.file.path;
+      const filePath = request.file.path;
       const newFileName = `file-updated-${Date.now()}.pdf`; 
       const newPath = path.join(newFileName); 
       const file = filePath;
@@ -138,24 +140,24 @@ export const ArticlesRouter = (db: NoSQLWrapper) => {
     try {
       const resultDbList = await db.UpdateArticle(id, updatedData);
   
-      return res.status(HttpStateCodes.OK).json({ response: resultDbList });
+      return response.status(HttpStateCodes.OK).json({ response: resultDbList });
     } catch (error) {
       console.error('Error al actualizar el artículo en la base de datos:', error);
-      return res.status(HttpStateCodes.INTERNAL_SERVER_ERROR).json({ error: 'Error interno del servidor', status: HttpStateCodes.INTERNAL_SERVER_ERROR });
+      return response.status(HttpStateCodes.INTERNAL_SERVER_ERROR).json({ error:serverMessages.serverError });
     }
   });
   
   
   
 
-  router.delete('/articles/publish/:id', ValidateAuthentication, AccessControlMiddleware(['administrador', 'revisor']), async (req, res) => {
-    const id = req.params.id;
+  router.delete('/articles/publish/:id', ValidateAuthentication, AccessControlMiddleware(['administrador', 'revisor']), async (request, response) => {
+    const id = request.params.id;
   
     try {
       const articleToDelete = await db.FindArticleById(id);
   
       if (!articleToDelete) {
-        return res.status(HttpStateCodes.NOT_FOUND).json({ error: 'Artículo no encontrado', status: HttpStateCodes.NOT_FOUND });
+        return response.status(HttpStateCodes.NOT_FOUND).json({ error:articleMessages.articleFind });
       }
   
       await db.DeleteArticle(id);
@@ -164,10 +166,10 @@ export const ArticlesRouter = (db: NoSQLWrapper) => {
   
       fs.unlinkSync(pdfPath);
   
-      return res.status(HttpStateCodes.OK).json({ message: 'Eliminado correctamente' });
+      return response.status(HttpStateCodes.OK).json({ message: articleMessages.articleDeleted });
     } catch (error) {
       console.error('Error al eliminar el artículo de la base de datos:', error);
-      return res.status(HttpStateCodes.INTERNAL_SERVER_ERROR).json({ error: 'Error interno del servidor', status: HttpStateCodes.INTERNAL_SERVER_ERROR });
+      return response.status(HttpStateCodes.INTERNAL_SERVER_ERROR).json({ error: serverMessages.serverError });
     }
   });
   

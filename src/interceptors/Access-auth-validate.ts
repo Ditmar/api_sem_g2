@@ -1,39 +1,19 @@
 import { Request, Response, NextFunction } from 'express';
 import HttpStateCodes from '../utils/http-state-codes';
+import { MyRequest } from '../tools/utils';
+import { rolMessages } from '../busines/messages';
 
-export const ValidateAuthentication = (req: Request, res: Response, next: NextFunction) => {
-
-  const authorizationHeader = req.headers.authorization;
-  
-  if (authorizationHeader && authorizationHeader.startsWith('Bearer ')) {
-    const token = authorizationHeader.split(' ')[1];
-    if(token){
-      (req as MyRequest).rol = ['administrador', 'revisor'];
-      return next();
-    }
-    return res.json({message:`usuario no autenticadoo`,status:HttpStateCodes.UNAUTHORIZED});
-  } else {
-    return res.json({message:`usuario no autenticado`,status:HttpStateCodes.UNAUTHORIZED});
-  }
-  
-    
-  };
-
-  interface MyRequest extends Request {
-    rol?: string[];
-  }
-  
 
   export const AccessControlMiddleware = (allowedRoles: string[]) => {
-    return (req: MyRequest, res: Response, next: NextFunction) => {
-      const rol = req.rol;
+    return (request: MyRequest, response: Response, next: NextFunction) => {
+      const rol = request.rol;
   
       if (!rol) {
-        return res.status(HttpStateCodes.UNAUTHORIZED).json({ error: 'No autorizado' });
+        return response.status(HttpStateCodes.UNAUTHORIZED).json({ error: rolMessages.rolMissing });
       }
   
       if (!rol.some(role => allowedRoles.includes(role))) {
-        return res.status(HttpStateCodes.FORBIDDEN).json({ error: 'Acceso prohibido' });
+        return response.status(HttpStateCodes.FORBIDDEN).json({ error:rolMessages.rolSome });
       }
   
       next();
