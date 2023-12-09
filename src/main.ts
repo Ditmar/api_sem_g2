@@ -1,8 +1,10 @@
 import server from './server'
 import UserRouter from './presentation/routers/user-router';
-import { MongoClient } from 'mongodb';
 import NoSQLWrapper from './data/interfaces/data-sources/no-sql-wrapper';
 import { Response } from 'express';
+import ArticleRouter from './presentation/routers/user-router';
+import { MongoClient, ObjectId } from 'mongodb';
+import mockData from './__mock__/data';
 
 if (process.env.NODE_ENV !== 'production') {
     require('dotenv').config();
@@ -30,9 +32,32 @@ const getMongoDBClient = async (): Promise<NoSQLWrapper> => {
         const result = await db.collection('users').find({}).toArray();
         return result;
     }
+
+    //artitles
+    const FindAllArticles = async (): Promise<any[]> => {
+        const result = await db.collection('articles').find({}).toArray();
+        return mockData;
+      };
+
+    const DeleteUsers = async(id:string): Promise<any> => {
+        const objID = new ObjectId(id);
+        const result = await db.collection('users').findOneAndDelete({_id :objID});
+
+        return result;
+    }
+    const UpdateUsers = async(id:any,data:any): Promise<any> => {
+        const objID = new ObjectId(id);
+        const updateData = data;
+
+        const result = await db.collection('users').replaceOne({_id :objID}, updateData);
+        return result;
+    }
     return {
         CreateUser,
-        FindAllUsers
+        FindAllUsers,   
+        DeleteUsers,
+        UpdateUsers,
+        FindAllArticles,
     }
 }
 
@@ -47,6 +72,7 @@ const getMongoDBClient = async (): Promise<NoSQLWrapper> => {
 (async() => {
     const db = await getMongoDBClient();
     server.use('/api', UserRouter(db));
+    server.use('/api', ArticleRouter(db));
     const port = process.env.API_PORT || 3000;
     server.listen(port, () => {
         console.log(`Server is listening on port ${port}`);
