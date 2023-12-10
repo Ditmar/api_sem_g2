@@ -23,7 +23,7 @@ const getMongoDBClient = async (): Promise<NoSQLWrapper> => {
     const db = client.db(database);
     const CreateUser = async (user: any): Promise<any> => {
         const result = await db.collection('users').insertOne(user);
-        console.log(`New user created with the following id: ${result.insertedId}`);
+        
         return {
             acknowledged: result.acknowledged,
             insertedId: result.insertedId,
@@ -37,7 +37,7 @@ const getMongoDBClient = async (): Promise<NoSQLWrapper> => {
 
     const CreateYear= async (year: any): Promise<any> => {
         const result = await db.collection('years').insertOne(year);
-        console.log(`New year created with the following id: ${result.insertedId}`);
+        
         return {
             acknowledged: result.acknowledged,
             insertedId: result.insertedId,
@@ -51,7 +51,7 @@ const getMongoDBClient = async (): Promise<NoSQLWrapper> => {
 
     const CreateVolume= async (volume: any): Promise<any> => {
         const result = await db.collection('volumes').insertOne(volume);
-        console.log(`New year created with the following id: ${result.insertedId}`);
+        
         return {
             acknowledged: result.acknowledged,
             insertedId: result.insertedId,
@@ -63,11 +63,11 @@ const getMongoDBClient = async (): Promise<NoSQLWrapper> => {
 
         return result;
     }
-const FindAllVolumes = async(page:number, limit:number): Promise<any[]> => {
-  const skip = (page - 1) * limit;
-  const result = await db.collection('volumes').find({}).skip(skip).limit(limit).toArray();
-  return result;
-};
+    const FindAllVolumes = async(page:number, limit:number): Promise<any[]> => {
+    const skip = (page - 1) * limit;
+    const result = await db.collection('volumes').find({}).skip(skip).limit(limit).toArray();
+    return result;
+    };
 
 
     const FindAllVolumeByYear = async (year:string,page:number,limit:number): Promise<any> => {
@@ -75,13 +75,13 @@ const FindAllVolumes = async(page:number, limit:number): Promise<any[]> => {
 
         try {
             resultYear = await FindYearbyName(year);
-            console.log(resultYear);
+            
         } catch(error: any) {
             return error;
         }
         
         const objectYearID = new ObjectId(resultYear._id);
-        console.log(objectYearID);  
+          
         const skip = (page - 1) * limit;
         const result = await db.collection('volumes').find({ year: objectYearID.toString() }).skip(skip).limit(limit).toArray();
         return result;
