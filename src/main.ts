@@ -9,24 +9,23 @@ if (process.env.NODE_ENV !== 'production') {
     require('dotenv').config();
 }
 //mongo
-const getMongoDBClient = () => __awaiter(void 0, void 0, void 0, function* () {
-    //mongodb://admin:password@localhost:27017/db
-    const stringConnection = `mongodb://localhost:27017`;
-    const uri = stringConnection;
-    const client = new mongodb_1.MongoClient(uri);
-    client.connect().then(()=>{console.log('base de datos conectada')});
+const getMongoDBClient = async (): Promise<NoSQLWrapper> => {
+    const uri = process.env.API_MONGO_URI || 'mongodb://localhost:27017';
+    const client = new MongoClient(uri);
+
+    client.connect();
     const database = process.env.API_MONGO_DBNAME;
     const db = client.db(database);
-    const CreateUser = (user) => __awaiter(void 0, void 0, void 0, function* () {
-        const result = yield db.collection('users').insertOne(user);
+    const CreateUser = async (user: any): Promise<any> => {
+        const result = await db.collection('users').insertOne(user);
         console.log(`New user created with the following id: ${result.insertedId}`);
         return {
             acknowledged: result.acknowledged,
             insertedId: result.insertedId,
         };
-    });
-    const FindAllUsers = () => __awaiter(void 0, void 0, void 0, function* () {
-        const result = yield db.collection('users').find({}).toArray();
+    }
+    const FindAllUsers = async (): Promise<any[]> => {
+        const result = await db.collection('users').find({}).toArray();
         return result;
     }
 
@@ -81,7 +80,7 @@ const getMongoDBClient = () => __awaiter(void 0, void 0, void 0, function* () {
     server.use('/api', ArticlesRouter(db));
 
     const port = process.env.API_PORT || 3000;
-    server_1.default.listen(port, () => {
+    server.listen(port, () => {
         console.log(`Server is listening on port ${port}`);
     });
-}))();
+})();

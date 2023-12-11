@@ -1,11 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
 import HttpStateCodes from '../utils/http-state-codes';
 
-// Vamos a definir nuestro mediationsw
-export const LoginMediationsw = (req: Request, res: Response, next: NextFunction) => {
-  const { email, password } = req.body
+// Definimos nuestro middleware
+export const RefreshTokenMiddleware = (req: Request, res: Response, next: NextFunction) => {
   
-  const expectedFields = ['email','password'];
+  const expectedFields = ['refreshToken'];
   const validKeys = Object.keys(req.body);
 
   const missingFields = expectedFields.filter((field) => !validKeys.includes(field));
@@ -21,15 +20,6 @@ export const LoginMediationsw = (req: Request, res: Response, next: NextFunction
   if (extraFields.length > 0) {
     return res.json({message:`Campos no válidos en la solicitud: ${extraFields.join(', ')}`, status:HttpStateCodes.BAD_REQUEST});
  }
-
-if(!(/^[^\s@]+@[^\s@]+\.[^\s@]{2,20}$/).test(email)){
-  return res.json({
-    message:`correo electronico no valido`,status:HttpStateCodes.BAD_REQUEST});
-}
-if (!/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,20}$/.test(password)) {
-  return res.json({message:'Ingrese una contraseña con almenos una letra, un digito 0-9 y con 8 caracteres como minimo', status:HttpStateCodes.BAD_REQUEST});
-}
-
 
   next();
 };

@@ -1,14 +1,14 @@
 import express from 'express';
 import HttpStateCodes from '../../utils/http-state-codes';
 import NoSQLWrapper from '../../data/interfaces/data-sources/no-sql-wrapper';
-import { RegisterMediationsw } from '../../mediationsw/mediationsw-register';
+import { RegisterMiddleware } from '../../middleware/middleware-register';
 import { hash } from 'bcrypt';
 
 export const RegisterUserRouter = (db: NoSQLWrapper) => {
     // routing
     const router = express.Router();
     
-    router.post('/register',RegisterMediationsw ,async(request, response) => {
+    router.post('/register',RegisterMiddleware ,async(request, response) => {
         let user = request.body;
         const emailExists = await db.FindUserByEmail(user.email)
         if(emailExists){

@@ -2,14 +2,14 @@ import express from 'express';
 import HttpStateCodes from '../../utils/http-state-codes';
 import NoSQLWrapper from '../../data/interfaces/data-sources/no-sql-wrapper';
 import { compare } from 'bcrypt';
-import { LoginMediationsw } from '../../mediationsw/mediationsw-login';
+import { LoginMiddleware } from '../../middleware/middleware-login';
 import jwt,{ JwtPayload }   from 'jsonwebtoken';
-import { RefreshTokenMediationsw } from '../../mediationsw/mediationsw-refresh-token';
+import { RefreshTokenMiddleware } from '../../middleware/middleware-refresh-token';
 export const LoginUserRouter = (db: NoSQLWrapper) => {
     // routing
     const router = express.Router();
     
-    router.post('/login',LoginMediationsw ,async(request, response) => {
+    router.post('/login',LoginMiddleware ,async(request, response) => {
         const {email, password} = request.body;
         
         const findEmail = await db.FindUserByEmail(email);
@@ -36,7 +36,7 @@ export const LoginUserRouter = (db: NoSQLWrapper) => {
     })
 
 
-    router.post('/refresh-token',RefreshTokenMediationsw ,async(request, response) => {
+    router.post('/refresh-token',RefreshTokenMiddleware ,async(request, response) => {
       const {refreshToken} = request.body;
       try {
         const decodedToken: any | JwtPayload = jwt.verify(refreshToken, `${process.env.TOKEN_SECRET || 'tokenSecret'}`);
