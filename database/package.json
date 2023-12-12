@@ -1,0 +1,31 @@
+{
+  "name": "api-rest",
+  "version": "0.0.3",
+  "description": "",
+  "scripts": {
+    "build": "tsc",
+    "dev:build": "tsc",
+    "dev:serve": "nodemon -e js -w dist ./dist/src/main.js",
+    "start": ": node ./dist/src/main.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "http-status-codes": "^2.3.0",
+    "mongodb": "^6.1.0",
+    "nodemon": "^3.0.2",
+    "pg": "^8.11.3"
+  },
+  "engines": {
+    "node": "16.20.1"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.19",
+    "@types/node": "^20.8.4",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.2.2"
+  }
+}
