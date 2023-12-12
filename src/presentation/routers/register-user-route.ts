@@ -3,17 +3,18 @@ import HttpStateCodes from '../../utils/http-state-codes';
 import NoSQLWrapper from '../../data/interfaces/data-sources/no-sql-wrapper';
 import { RegisterMiddleware } from '../../middleware/middleware-register';
 import { hash } from 'bcrypt';
+import { userMessages } from '../../busines/messages';
 
-export const RegisterUserRouter = (db: NoSQLWrapper) => {
+export const RegisterRouter = (db: NoSQLWrapper) => {
     // routing
     const router = express.Router();
     
-    router.post('/register',RegisterMiddleware ,async(request, response) => {
+    router.post('/auth/register',RegisterMiddleware ,async(request, response) => {
         let user = request.body;
         const emailExists = await db.FindUserByEmail(user.email)
         if(emailExists){
-          return response.json({
-            message:'el email ya se encuentra registrado',status:HttpStateCodes.BAD_REQUEST});
+            return response.status(HttpStateCodes.BAD_REQUEST).json({
+                message: `${userMessages.userExists}`});
         }
         user.password = await hash(request.body.password,10)
         const resultDb = await db.CreateUser(user);

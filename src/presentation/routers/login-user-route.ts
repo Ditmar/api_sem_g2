@@ -5,23 +5,25 @@ import { compare } from 'bcrypt';
 import { LoginMiddleware } from '../../middleware/middleware-login';
 import jwt,{ JwtPayload }   from 'jsonwebtoken';
 import { RefreshTokenMiddleware } from '../../middleware/middleware-refresh-token';
-export const LoginUserRouter = (db: NoSQLWrapper) => {
+import { RefreshTokenMessages, userMessages } from '../../busines/messages';
+
+export const LoginRouter = (db: NoSQLWrapper) => {
     // routing
     const router = express.Router();
     
-    router.post('/login',LoginMiddleware ,async(request, response) => {
+    router.post('/auth/login',LoginMiddleware ,async(request, response) => {
         const {email, password} = request.body;
         
         const findEmail = await db.FindUserByEmail(email);
         if(!findEmail){
-          return response.json({
-            message:'credenciales incorrectas',status:HttpStateCodes.BAD_REQUEST});
+          return response.status(HttpStateCodes.BAD_REQUEST).json({
+            message: `${userMessages.incorrectCredentials}` });
         }
 
         const checkPassword = await compare(password, findEmail.password);
         if(!checkPassword){
-          return response.json({
-            message:'credenciales incorrectas',status:HttpStateCodes.BAD_REQUEST});
+          return response.status(HttpStateCodes.BAD_REQUEST).json({
+            message:`${userMessages.incorrectCredentials}` });
         }
 
         const payload = {id:findEmail._id}
@@ -32,8 +34,8 @@ export const LoginUserRouter = (db: NoSQLWrapper) => {
               expiresIn: `${process.env.TOKEN_EXPIRES || '5h'}`
             }
           )
-        return response.json({message:"logueo exitoso",token});
-    })
+          return response.status(HttpStateCodes.CREATED).json({message: `${userMessages.userLogin}`,token});
+        })
 
 
     router.post('/refresh-token',RefreshTokenMiddleware ,async(request, response) => {
@@ -51,14 +53,13 @@ export const LoginUserRouter = (db: NoSQLWrapper) => {
       return response.json({token});
       
     } catch (error) {
-        return response.json({message:"acceso no autorizado",status:HttpStateCodes.UNAUTHORIZED});
-      }
+      return response.status(HttpStateCodes.UNAUTHORIZED).json({message:`${RefreshTokenMessages.tokenDinied}`});
+    }
   })
 
 
     return router;
 }
-// eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY1NWFjNzg0MjAzODliMjE2MWZlOTM5YiIsImlhdCI6MTcwMDQ0OTg0OSwiZXhwIjoxNzAwNTM2MjQ5fQ.oWbeaQvAfwhvQMfp67Ihf99NlMmIMzAnok7xUR-UeVQ
 
 interface User {
   id: string;

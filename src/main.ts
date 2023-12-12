@@ -4,14 +4,19 @@ import { MongoClient, ObjectId } from 'mongodb';
 import NoSQLWrapper from './data/interfaces/data-sources/no-sql-wrapper';
 import { Response } from 'express';
 import { ArticlesRouter } from './presentation/routers/articles-router';
+import { RegisterRouter,  } from './presentation/routers/register-user-route';
+import { LoginRouter } from './presentation/routers/login-user-route';
 
 if (process.env.NODE_ENV !== 'production') {
     require('dotenv').config();
 }
 //mongo
 const getMongoDBClient = async (): Promise<NoSQLWrapper> => {
-    const uri = process.env.API_MONGO_URI || 'mongodb://localhost:27017';
-    const client = new MongoClient(uri);
+     //mongodb://admin:password@localhost:27017/db
+     const stringConnection = `mongodb://${process.env.API_MONGO_USERNAME}:${process.env.API_MONGO_PASSWORD}@localhost:27017`
+
+     const uri = stringConnection;
+     const client = new MongoClient(uri);
 
     client.connect();
     const database = process.env.API_MONGO_DBNAME;
@@ -61,6 +66,15 @@ const getMongoDBClient = async (): Promise<NoSQLWrapper> => {
         const objectId = new ObjectId(id);
         await db.collection('articles').findOneAndDelete({_id:objectId});   
     }
+    const FindUserByEmail = async (email:string): Promise<any> => {
+        const result = await db.collection('users').findOne({email:email});
+        return result;
+    }
+    const FindUserById = async (id:any): Promise<any> => {
+        const objectId = new ObjectId(id);
+        const result = await db.collection('users').findOne({_id:objectId});
+        return result;
+    }
     return {
         CreateUser,
         FindAllUsers,
@@ -69,7 +83,9 @@ const getMongoDBClient = async (): Promise<NoSQLWrapper> => {
         FindAllArticle,
         FindArticleById,
         DeleteArticle,
-        UpdateArticle
+        UpdateArticle,
+        FindUserByEmail,
+        FindUserById
     }
 }
 
@@ -78,6 +94,9 @@ const getMongoDBClient = async (): Promise<NoSQLWrapper> => {
 
     server.use('/api', UserRouter(db));
     server.use('/api', ArticlesRouter(db));
+    server.use('/api', RegisterRouter(db));
+    server.use('/api', LoginRouter(db));
+
 
     const port = process.env.API_PORT || 3000;
     server.listen(port, () => {
