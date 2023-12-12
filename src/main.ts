@@ -6,6 +6,7 @@ import { Response } from 'express';
 import YearRouter from './presentation/routers/year-router';
 import VolumeRouter from './presentation/routers/volume-router';
 import { isArgumentsObject } from 'util/types';
+import { ArticlesRouter } from './presentation/routers/articles-router';
 
 if (process.env.NODE_ENV !== 'production') {
     require('dotenv').config();
@@ -37,12 +38,19 @@ const getMongoDBClient = async (): Promise<NoSQLWrapper> => {
 
     const CreateYear= async (year: any): Promise<any> => {
         const result = await db.collection('years').insertOne(year);
-        
+
         return {
             acknowledged: result.acknowledged,
             insertedId: result.insertedId,
         };
     }
+        
+
+    const CreateArticle = async (article: any): Promise<any> => {
+        const result = await db.collection('articles').insertOne(article);
+        console.log(`New article created with the following id: ${result.insertedId}`);
+    }
+        
 
     const FindAllYears = async (): Promise<any[]> => {
         const result = await db.collection('years').find({}).toArray();
@@ -87,31 +95,52 @@ const getMongoDBClient = async (): Promise<NoSQLWrapper> => {
         return result;
     }
 
+    const FindAllArticle = async (): Promise<any[]> => {
+        const result = await db.collection('articles').find({}).toArray();
+        return result;
+    }
+    const FindArticleById = async (id:string): Promise<any> => {
+        const objectId = new ObjectId(id);
+        const result = await db.collection('articles').findOne({_id:objectId});
+        return result;
+    }
+    const UpdateArticle = async (id:string,article: any): Promise<any> => {
+        const objectId = new ObjectId(id);  
+        const result = await db.collection('articles').findOneAndUpdate(
+            { _id: objectId },
+            { $set: article }, 
+            { returnDocument: 'after' } 
+          ); 
+        return result;
+    }
+    const DeleteArticle = async (id:string) => {
+        const objectId = new ObjectId(id);
+        await db.collection('articles').findOneAndDelete({_id:objectId});   
+    }
     return {
         CreateUser,
         FindAllUsers,
+        CreateArticle,
+        FindAllArticle,
+        FindArticleById,
+        DeleteArticle,
+        UpdateArticle,
         CreateYear,
         FindAllYears,
         CreateVolume,
         FindAllVolumes,
-        
         FindAllVolumeByYear
     }
 }
 
-// const getPgDBClient = () => {
-
-// }
-// //todo homework
-// const getSqlServerClient = () => {
-
-// }
-
 (async() => {
     const db = await getMongoDBClient();
+
     server.use('/api', UserRouter(db));
     server.use('/api', YearRouter(db));
     server.use('/api', VolumeRouter(db));
+    server.use('/api', ArticlesRouter(db));
+
     const port = process.env.API_PORT || 3000;
     server.listen(port, () => {
         console.log(`Server is listening on port ${port}`);

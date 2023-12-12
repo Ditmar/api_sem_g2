@@ -3,8 +3,10 @@
   "version": "0.0.3",
   "description": "",
   "scripts": {
+    "build": "tsc",
     "dev:build": "tsc",
-    "dev:serve": "nodemon -e js -w dist ./dist/src/main.js"
+    "dev:serve": "nodemon -e js -w dist ./dist/src/main.js",
+    "start": ": node ./dist/src/main.js"
   },
   "keywords": [],
   "author": "",
@@ -14,7 +16,10 @@
     "dotenv": "^16.3.1",
     "express": "^4.18.2",
     "jsonwebtoken": "^9.0.2",
+    "@types/multer": "^1.4.11",
+    "joi": "^17.11.0",
     "mongodb": "^6.1.0",
+    "multer": "^1.4.4",
     "pg": "^8.11.3"
   },
   "engines": {
