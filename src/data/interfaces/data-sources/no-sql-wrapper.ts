@@ -11,5 +11,8 @@ interface NoSQLWrapper {
     FindArticleById: (article: any) => Promise<any>;
     DeleteArticle: any;
     UpdateArticle: (id: string, article: any) => Promise<any>;
+
+    FindUserByEmail:(user: any) => Promise<any>
+    FindUserById:(user: any) => Promise<any>
 }
 export default NoSQLWrapper;
