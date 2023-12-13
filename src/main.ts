@@ -1,6 +1,7 @@
 import server from './server'
 import UserRouter from './presentation/routers/user-router';
 import { MongoClient, ObjectId } from 'mongodb';
+import mockData from './__mock__/data';
 import NoSQLWrapper from './data/interfaces/data-sources/no-sql-wrapper';
 import { Response } from 'express';
 import YearRouter from './presentation/routers/year-router';
@@ -37,16 +38,40 @@ const getMongoDBClient = async (): Promise<NoSQLWrapper> => {
         return result;
     }
 
+    //artitles
+    const FindAllArticles = async (): Promise<any[]> => {
+        const result = await db.collection('articles').find({}).toArray();
+        return mockData;
+      };
 
+    const DeleteUsers = async(id:string): Promise<any> => {
+        const objID = new ObjectId(id);
+        const result = await db.collection('users').findOneAndDelete({_id :objID});
+
+        return result;
+    }
+    const UpdateUsers = async(id:any,data:any): Promise<any> => {
+        const objID = new ObjectId(id);
+        const updateData = data;
+
+        const result = await db.collection('users').replaceOne({_id :objID}, updateData);
+        return result;
+    }
+    return {
+        CreateUser,
+        FindAllUsers,   
+        DeleteUsers,
+        UpdateUsers,
+        FindAllArticles,
+
+    }
     const CreateYear= async (year: any): Promise<any> => {
-        const result = await db.collection('years').insertOne(year);
+    const result = await db.collection('years').insertOne(year);
 
         return {
             acknowledged: result.acknowledged,
             insertedId: result.insertedId,
         };
-    }
-        
 
     const CreateArticle = async (article: any): Promise<any> => {
         const result = await db.collection('articles').insertOne(article);
@@ -155,7 +180,6 @@ const getMongoDBClient = async (): Promise<NoSQLWrapper> => {
     server.use('/api', ArticlesRouter(db));
     server.use('/api', RegisterRouter(db));
     server.use('/api', LoginRouter(db));
-
 
     const port = process.env.API_PORT || 3000;
     server.listen(port, () => {
