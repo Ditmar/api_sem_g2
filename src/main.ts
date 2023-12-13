@@ -3,6 +3,9 @@ import UserRouter from './presentation/routers/user-router';
 import { MongoClient, ObjectId } from 'mongodb';
 import NoSQLWrapper from './data/interfaces/data-sources/no-sql-wrapper';
 import { Response } from 'express';
+import YearRouter from './presentation/routers/year-router';
+import VolumeRouter from './presentation/routers/volume-router';
+import { isArgumentsObject } from 'util/types';
 import { ArticlesRouter } from './presentation/routers/articles-router';
 import { RegisterRouter,  } from './presentation/routers/register-user-route';
 import { LoginRouter } from './presentation/routers/login-user-route';
@@ -23,7 +26,7 @@ const getMongoDBClient = async (): Promise<NoSQLWrapper> => {
     const db = client.db(database);
     const CreateUser = async (user: any): Promise<any> => {
         const result = await db.collection('users').insertOne(user);
-        console.log(`New user created with the following id: ${result.insertedId}`);
+        
         return {
             acknowledged: result.acknowledged,
             insertedId: result.insertedId,
@@ -35,15 +38,65 @@ const getMongoDBClient = async (): Promise<NoSQLWrapper> => {
     }
 
 
+    const CreateYear= async (year: any): Promise<any> => {
+        const result = await db.collection('years').insertOne(year);
 
-    const CreateArticle = async (article: any): Promise<any> => {
-        const result = await db.collection('articles').insertOne(article);
-        console.log(`New article created with the following id: ${result.insertedId}`);
         return {
             acknowledged: result.acknowledged,
             insertedId: result.insertedId,
         };
     }
+        
+
+    const CreateArticle = async (article: any): Promise<any> => {
+        const result = await db.collection('articles').insertOne(article);
+        console.log(`New article created with the following id: ${result.insertedId}`);
+    }
+        
+
+    const FindAllYears = async (): Promise<any[]> => {
+        const result = await db.collection('years').find({}).toArray();
+        return result;
+    }
+
+    const CreateVolume= async (volume: any): Promise<any> => {
+        const result = await db.collection('volumes').insertOne(volume);
+        
+        return {
+            acknowledged: result.acknowledged,
+            insertedId: result.insertedId,
+        };
+    }
+
+    const FindYearbyName = async(name:string): Promise<any> => {
+        const result = await db.collection('years').findOne({ name });
+
+        return result;
+    }
+    const FindAllVolumes = async(page:number, limit:number): Promise<any[]> => {
+    const skip = (page - 1) * limit;
+    const result = await db.collection('volumes').find({}).skip(skip).limit(limit).toArray();
+    return result;
+    };
+
+
+    const FindAllVolumeByYear = async (year:string,page:number,limit:number): Promise<any> => {
+        let resultYear: any = { name: '' };
+
+        try {
+            resultYear = await FindYearbyName(year);
+            
+        } catch(error: any) {
+            return error;
+        }
+        
+        const objectYearID = new ObjectId(resultYear._id);
+          
+        const skip = (page - 1) * limit;
+        const result = await db.collection('volumes').find({ year: objectYearID.toString() }).skip(skip).limit(limit).toArray();
+        return result;
+    }
+
     const FindAllArticle = async (): Promise<any[]> => {
         const result = await db.collection('articles').find({}).toArray();
         return result;
@@ -78,12 +131,16 @@ const getMongoDBClient = async (): Promise<NoSQLWrapper> => {
     return {
         CreateUser,
         FindAllUsers,
-
         CreateArticle,
         FindAllArticle,
         FindArticleById,
         DeleteArticle,
         UpdateArticle,
+        CreateYear,
+        FindAllYears,
+        CreateVolume,
+        FindAllVolumes,
+        FindAllVolumeByYear,
         FindUserByEmail,
         FindUserById
     }
@@ -93,6 +150,8 @@ const getMongoDBClient = async (): Promise<NoSQLWrapper> => {
     const db = await getMongoDBClient();
 
     server.use('/api', UserRouter(db));
+    server.use('/api', YearRouter(db));
+    server.use('/api', VolumeRouter(db));
     server.use('/api', ArticlesRouter(db));
     server.use('/api', RegisterRouter(db));
     server.use('/api', LoginRouter(db));
@@ -103,3 +162,5 @@ const getMongoDBClient = async (): Promise<NoSQLWrapper> => {
         console.log(`Server is listening on port ${port}`);
     });
 })();
+
+
