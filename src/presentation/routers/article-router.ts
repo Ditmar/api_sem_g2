@@ -1,5 +1,8 @@
 import express, { Request, Response } from 'express';
 import NoSQLWrapper from '../../data/interfaces/data-sources/no-sql-wrapper';
+import HttpStateCodes from '../../utils/http-state-codes';
+import { errorMenssages } from '../../bussines/messages';
+
 
 const ArticleRouter = (db: NoSQLWrapper) => {
     const router = express.Router();
@@ -11,10 +14,11 @@ const ArticleRouter = (db: NoSQLWrapper) => {
     res.json(recentArticles);
     } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'Internal Server Error' });
+    //res.status(500).json({ error: 'Internal Server Error' });
+    res.status(HttpStateCodes.UNAUTHORIZED).json(errorMenssages.internalError);
     }
    });
-
+    
     /**
     *  @param {number} page 
     *  @param {number} pageSize 
